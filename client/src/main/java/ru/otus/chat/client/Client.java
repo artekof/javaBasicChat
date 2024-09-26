@@ -2,6 +2,7 @@ package ru.otus.chat.client;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Scanner;
@@ -24,6 +25,14 @@ public class Client {
                     if (message.startsWith("/")) {
                         if (message.startsWith("/exitok")) {
                             break;
+                        }
+                        if (message.startsWith("/authok")) {
+                            System.out.println("Аутентификация прошла успешно с именем пользователя: " +
+                                    message.split(" ")[1]);
+                        }
+                        if (message.startsWith("/regok")) {
+                            System.out.println("Регистрация прошла успешно с именем пользователя: "+
+                                    message.split(" ")[1]);
                         }
                     } else {
                         System.out.println(message);
