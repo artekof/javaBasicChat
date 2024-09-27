@@ -2,7 +2,6 @@ package ru.otus.chat.client;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Scanner;
@@ -13,7 +12,7 @@ public class Client {
     DataOutputStream out;
 
     public Client() throws IOException {
-        Scanner scanner = new Scanner(System.in);
+        Scanner sc = new Scanner(System.in);
         socket = new Socket("localhost", 8189);
         in = new DataInputStream(socket.getInputStream());
         out = new DataOutputStream(socket.getOutputStream());
@@ -26,11 +25,11 @@ public class Client {
                         if (message.startsWith("/exitok")) {
                             break;
                         }
-                        if (message.startsWith("/authok")) {
+                        if (message.startsWith("/authok ")) {
                             System.out.println("Аутентификация прошла успешно с именем пользователя: " +
                                     message.split(" ")[1]);
                         }
-                        if (message.startsWith("/regok")) {
+                        if (message.startsWith("/regok ")) {
                             System.out.println("Регистрация прошла успешно с именем пользователя: "+
                                     message.split(" ")[1]);
                         }
@@ -46,7 +45,7 @@ public class Client {
         }).start();
 
         while (true) {
-            String message = scanner.nextLine();
+            String message = sc.nextLine();
             out.writeUTF(message);
             if (message.startsWith("/exit")) {
                 break;
@@ -55,6 +54,7 @@ public class Client {
     }
 
     public void disconnect(){
+
         try {
             in.close();
         } catch (IOException e) {

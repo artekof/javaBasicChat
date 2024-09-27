@@ -35,7 +35,7 @@ public class ClientHandler {
                 while (true) {
                     String message = in.readUTF();
                     if (message.startsWith("/")) {
-                        if (message.startsWith("/exit ")) {
+                        if (message.startsWith("/exit")) {
                             sendMessage("/exitok");
                             break;
                         }
@@ -75,7 +75,7 @@ public class ClientHandler {
                 while (true) {
                     String message = in.readUTF();
                     if (message.startsWith("/")) {
-                        if (message.startsWith("/exit ")){
+                        if (message.startsWith("/exit")){
                             sendMessage("/exitok");
                             System.out.println(username + " отключился");
                             break;
@@ -114,6 +114,7 @@ public class ClientHandler {
 
     public void disconnect(){
         server.unsubscribe(this);
+
         try {
             in.close();
         } catch (IOException e) {
