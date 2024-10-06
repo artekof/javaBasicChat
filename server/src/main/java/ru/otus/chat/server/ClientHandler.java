@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Arrays;
+
 
 public class ClientHandler {
     private Server server;
@@ -14,6 +14,24 @@ public class ClientHandler {
     private DataOutputStream out;
 
     private String username;
+    private String role;
+    private boolean isActive = true;
+
+    public boolean isActive(){
+        return isActive();
+    }
+
+    public void setIsActive(boolean active){
+        isActive = active;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
 
     public String getUsername() {
         return username;
@@ -32,11 +50,12 @@ public class ClientHandler {
             try {
                 System.out.println("Клиент подключился");
                 //цикл аутентификации
-                while (true) {
+                while (isActive) {
                     String message = in.readUTF();
                     if (message.startsWith("/")) {
                         if (message.startsWith("/exit")) {
                             sendMessage("/exitok");
+                            isActive = false;
                             break;
                         }
                         // /auth login password
@@ -53,47 +72,66 @@ public class ClientHandler {
                             }
                             continue;
                         }
-                        // /reg login password username
+                        // /reg login password username role
                         if (message.startsWith("/reg ")) {
                             String[] elements = message.split(" ");
-                            if (elements.length != 4) {
+                            if (elements.length != 5) {
                                 sendMessage("Неверный формат команды /reg");
                                 continue;
                             }
-                            if (server.getAuthenticatedProvider()
-                                    .registration(this,elements[1], elements[2], elements[3])){
+                            if (server.getAuthenticatedProvider().registration(this,elements[1], elements[2], elements[3], elements[4])){
                                 break;
                             }
                             continue;
                         }
                     }
                     sendMessage("Перед работой необходимо пройти аутентификацию командой " +
-                            "/auth login password или регистрацию командой /reg login password username");
+                            "/auth login password или регистрацию командой /reg login password username role");
                 }
+
                 System.out.println("Клиент "+ username+ " успешно прошел аутентификацию");
 
-                while (true) {
-                    String message = in.readUTF();
-                    if (message.startsWith("/")) {
-                        if (message.startsWith("/exit")){
-                            sendMessage("/exitok");
-                            System.out.println(username + " отключился");
-                            break;
-                        }
-                        if (message.startsWith("/w ")){
-                            String[] wordsInMessage = message.split(" ", 3);
-                            if(wordsInMessage.length == 3){
-                                String user = wordsInMessage[1];
-                                String userMessage = wordsInMessage[2];
-                                server.sendMessageClient(userMessage,user);
-                            }
-                            else {
-                                sendMessage(message);
+                while (isActive) {
+                    try {
+                        String message = in.readUTF();
+                        // /kick username
+                        if (message.startsWith("/kick ")) {
+                            if (this.getRole().equals("admin")) {
+                                String[] elements = message.split(" ");
+                                if (elements.length != 2) {
+                                    sendMessage("Неверный формат команды /kick");
+                                    continue;
+                                }
+                                server.kickClient(elements[1]);
+                                server.broadcastMessage("Пользователь " + elements[1] + " отключен администратором");
                             }
                         }
+                        if (message.startsWith("/")) {
+                            if (message.startsWith("/exit")) {
+                                sendMessage("/exitok");
+                                isActive = false;
+                                System.out.println(username + " отключился");
+                                break;
+                            }
+                            if (message.startsWith("/w ")) {
+                                String[] wordsInMessage = message.split(" ", 3);
+                                if (wordsInMessage.length == 3) {
+                                    String user = wordsInMessage[1];
+                                    String userMessage = wordsInMessage[2];
+                                    server.sendMessageClient(userMessage, user);
+                                } else {
+                                    sendMessage(message);
+                                }
+                            }
 
-                    } else {
-                        server.broadcastMessage(username + " : " + message);
+                        } else {
+                            server.broadcastMessage(username + " : " + message);
+                        }
+                    } catch (EOFException e) {
+                        System.out.println("Клиент " + username + " деактивирован.");
+                        isActive = false;
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
             } catch (IOException e) {
@@ -106,7 +144,9 @@ public class ClientHandler {
 
     public void sendMessage(String message) {
         try {
-            out.writeUTF(message);
+            if (isActive){
+                out.writeUTF(message);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -114,7 +154,7 @@ public class ClientHandler {
 
     public void disconnect(){
         server.unsubscribe(this);
-
+        isActive = false;
         try {
             in.close();
         } catch (IOException e) {
