@@ -10,19 +10,26 @@ public class Client {
     Socket socket;
     DataInputStream in;
     DataOutputStream out;
+    private boolean isActive;
 
     public Client() throws IOException {
         Scanner sc = new Scanner(System.in);
         socket = new Socket("localhost", 8189);
         in = new DataInputStream(socket.getInputStream());
         out = new DataOutputStream(socket.getOutputStream());
+        isActive = true;
 
         new Thread(() -> {
             try {
-                while (true) {
+                while (isActive) {
                     String message = in.readUTF();
                     if (message.startsWith("/")) {
                         if (message.startsWith("/exitok")) {
+                            break;
+                        }
+                        if (message.startsWith("/kicked")){
+                            System.out.println("Вас отключил админ");
+                            isActive = false;
                             break;
                         }
                         if (message.startsWith("/authok ")) {
@@ -44,10 +51,13 @@ public class Client {
             }
         }).start();
 
-        while (true) {
+        while (isActive) {
             String message = sc.nextLine();
-            out.writeUTF(message);
+            if (isActive){
+                out.writeUTF(message);
+            }
             if (message.startsWith("/exit")) {
+                isActive = false;
                 break;
             }
         }

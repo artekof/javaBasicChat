@@ -63,4 +63,13 @@ public class Server {
         return false;
     }
 
+    public synchronized void kickClient(String username) {
+        for (ClientHandler client : clients) {
+            if (client.getUsername().equals(username)) {
+                client.sendMessage("/kicked");
+                client.setIsActive(false);
+                break;
+            }
+        }
+    }
 }
